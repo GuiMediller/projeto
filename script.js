@@ -1,87 +1,77 @@
-let gamepadIndex = null;
-let controleConectado = false;
-const estadoBotoes = {};
-const efeitos = {
-  0: "balerina",    // Botão A
-  1: "miau",        // Botão B
-  2: "milkshake",   // Botão X
-  3: "pew",         // Botão Y
-  4: "sahur",       // L1 / LB
-  5: "vaca",        // R1 / RB
-  8: "tralalero"    // Select / Back
+const actions = {
+  0: 'balerina',   // Botão A ou tecla 1
+  1: 'miau',       // Botão B ou tecla 2
+  2: 'milkshake',  // Botão X ou tecla 3
+  3: 'pew',        // Botão Y ou tecla 4
+  4: 'sahur',      // Botão LB ou tecla 5
+  5: 'vaca',       // Botão RB ou tecla 6
+  6: 'tralalero'   // Botão Select ou tecla 7
 };
 
-// Guardar áudios e estado para parar se necessário
-const efeitosAtivos = {};
+const playing = {};
+const audioElements = {};
+const gifContainer = document.getElementById('gif-container');
 
-window.addEventListener("gamepadconnected", (e) => {
-  if (controleConectado) return;
+// Precarregar os sons
+for (let key in actions) {
+  const name = actions[key];
+  const audio = new Audio(`audio/${name}.mp3`);
+  audioElements[name] = audio;
+}
 
-  gamepadIndex = e.gamepad.index;
-  controleConectado = true;
-
-  document.getElementById("mensagem").textContent = "controle conectado";
-
-  const somConexao = new Audio("audio/conectado.mp3");
-  somConexao.play().catch(err => console.warn("Erro ao tocar som de conexão:", err));
-
-  updateLoop();
-});
-
-function updateLoop() {
-  const gamepad = navigator.getGamepads()[gamepadIndex];
-
-  if (gamepad) {
-    for (const botao in efeitos) {
-      const index = parseInt(botao);
-      const nome = efeitos[botao];
-      const button = gamepad.buttons[index];
-
-      if (!estadoBotoes[index]) estadoBotoes[index] = false;
-
-      // Quando botão é pressionado
-      if (button.pressed && !estadoBotoes[index]) {
-        // Se já está ativo, cancela
-        if (efeitosAtivos[nome]) {
-          cancelarEfeito(nome);
-        } else {
-          reproduzirEfeito(nome);
-        }
+// Função para ativar/desativar áudio e gif
+function toggleAction(name) {
+  if (playing[name]) {
+    audioElements[name].pause();
+    audioElements[name].currentTime = 0;
+    gifContainer.innerHTML = '';
+    playing[name] = false;
+  } else {
+    // Parar todos os outros
+    for (let key in playing) {
+      if (playing[key]) {
+        audioElements[key].pause();
+        audioElements[key].currentTime = 0;
+        playing[key] = false;
       }
-
-      estadoBotoes[index] = button.pressed;
     }
+    const audio = audioElements[name];
+    audio.play();
+    const gif = document.createElement('img');
+    gif.src = `img/${name}.gif`;
+    gifContainer.innerHTML = '';
+    gifContainer.appendChild(gif);
+    playing[name] = true;
+  }
+}
+
+// Gamepad
+window.addEventListener("gamepadconnected", () => {
+  console.log("Controle conectado");
+  const audio = new Audio('audio/conectado.mp3'); // Opcional
+  audio.play();
+
+  function updateGamepad() {
+    const gp = navigator.getGamepads()[0];
+    if (gp) {
+      gp.buttons.forEach((btn, i) => {
+        if (btn.pressed && actions[i] !== undefined) {
+          toggleAction(actions[i]);
+        }
+      });
+    }
+    requestAnimationFrame(updateGamepad);
   }
 
-  requestAnimationFrame(updateLoop);
-}
+  updateGamepad();
+});
 
-function reproduzirEfeito(nome) {
-  const audio = new Audio(`audio/${nome}.mp3`);
-  const gif = document.getElementById(`gif-${nome}`);
-
-  if (!gif) return;
-
-  // Garante que o gif está visível
-  gif.style.display = "block";
-  audio.play().catch(err => console.warn(`Erro ao tocar ${nome}.mp3:`, err));
-
-  // Guardar referência para poder cancelar depois
-  efeitosAtivos[nome] = { audio, gif };
-
-  audio.addEventListener("ended", () => {
-    gif.style.display = "none";
-    delete efeitosAtivos[nome];
-  });
-}
-
-function cancelarEfeito(nome) {
-  const efeito = efeitosAtivos[nome];
-  if (!efeito) return;
-
-  efeito.audio.pause();
-  efeito.audio.currentTime = 0;
-  efeito.gif.style.display = "none";
-
-  delete efeitosAtivos[nome];
-}
+// Teclado
+window.addEventListener('keydown', (e) => {
+  const tecla = e.key;
+  if (tecla >= '1' && tecla <= '7') {
+    const index = parseInt(tecla) - 1;
+    const name = actions[index];
+    if (name) toggleAction(name);
+  }
+});
