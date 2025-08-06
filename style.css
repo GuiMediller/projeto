@@ -2,7 +2,7 @@ body {
   margin: 0;
   padding: 0;
   height: 100vh;
-  background-image: url("img/a.jpg");
+  background-image: url("img/a.jpg"); /* plano de fundo */
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -19,5 +19,5 @@ body {
 img {
   width: 300px;
   margin-top: 20px;
-  display: none;
+  display: none; /* os GIFs começam ocultos */
 }
